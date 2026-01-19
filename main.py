@@ -21,8 +21,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize SudachiPy tokenizer
-tokenizer_obj = dictionary.Dictionary().create()
+# Initialize SudachiPy tokenizer with full dictionary
+tokenizer_obj = dictionary.Dictionary(dict="full").create()
 mode = tokenizer.Tokenizer.SplitMode.C  # C mode for best granularity
 
 
