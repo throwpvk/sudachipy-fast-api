@@ -26,6 +26,22 @@ tokenizer_obj = dictionary.Dictionary(dict="full").create()
 mode = tokenizer.Tokenizer.SplitMode.C  # C mode for best granularity
 
 
+def katakana_to_hiragana(text: str) -> str:
+    """Convert katakana to hiragana"""
+    if not text:
+        return text
+    result = []
+    for char in text:
+        code = ord(char)
+        # Katakana range: 0x30A1 (ァ) to 0x30F6 (ヶ)
+        if 0x30A1 <= code <= 0x30F6:
+            # Convert to hiragana by subtracting 0x60
+            result.append(chr(code - 0x60))
+        else:
+            result.append(char)
+    return ''.join(result)
+
+
 class Token(BaseModel):
     surface: str
     base: str
@@ -77,16 +93,17 @@ def process_text(text: str) -> dict:
         normalized_parts = []
         
         for m in morphemes:
-            # Get normalized form (基本形)
-            base_form = m.normalized_form()
+            # Get surface form and normalized form
             surface = m.surface()
+            base_form = m.normalized_form()
             
             # Get part of speech (品詞)
             pos_tags = m.part_of_speech()
             pos = pos_tags[0] if pos_tags else "不明"
             
-            # Get reading if available
-            reading = m.reading_form() if hasattr(m, 'reading_form') else None
+            # Get reading in hiragana (convert from katakana)
+            reading_katakana = m.reading_form() if hasattr(m, 'reading_form') else None
+            reading = katakana_to_hiragana(reading_katakana) if reading_katakana else None
             
             tokens.append({
                 "surface": surface,
@@ -95,9 +112,10 @@ def process_text(text: str) -> dict:
                 "reading": reading
             })
             
-            normalized_parts.append(base_form)
+            # Use surface form for better normalization accuracy
+            normalized_parts.append(surface)
         
-        # Create normalized text (without spaces)
+        # Create normalized text (without spaces) - using surface forms
         normalized = "".join(normalized_parts)
         
         # Create normalized spaced text
